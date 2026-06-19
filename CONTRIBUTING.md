@@ -26,10 +26,10 @@ pnpm install
    Source and its colocated test live side by side in `src/` (`*.test.ts`). The editor
    applies ESLint + Prettier on save (see [`.vscode/settings.json`](./.vscode/settings.json)).
 
-3. Verify everything passes (the same checks CI runs):
+3. Verify everything passes (the same checks CI runs, in the same order):
 
    ```bash
-   pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:run
+   pnpm lint && pnpm lint:md && pnpm format:check && pnpm typecheck && pnpm knip && pnpm test:run && pnpm build && pnpm check:publish
    ```
 
 4. Add a **changeset** if your change affects the published package:
@@ -43,8 +43,8 @@ pnpm install
 
 5. Commit following [Conventional Commits](https://www.conventionalcommits.org/) (you can use `pnpm commit`).
    Husky hooks run automatically: **pre-commit** → `lint-staged`, **commit-msg** → `commitlint`.
-6. Open a Pull Request against `main`. CI runs lint, format, typecheck, test, build, and
-   package validation on **Node 22 and 24**.
+6. Open a Pull Request against `main`. CI runs lint, markdown lint, format, typecheck,
+   knip, test, build, and package validation on **Node 22 and 24**.
 
 ## Conventions
 
