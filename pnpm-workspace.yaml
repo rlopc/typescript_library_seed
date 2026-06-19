@@ -1,0 +1,4 @@
+# pnpm 10+ blocks dependency build scripts by default.
+# List the ones that don't need compiling to silence the warning.
+ignoredBuiltDependencies:
+  - esbuild
