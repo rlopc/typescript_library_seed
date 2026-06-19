@@ -12,6 +12,7 @@ A starter template gathering current best practices for a TypeScript package: bu
 - **Code quality** — ESLint (flat config, type-checked) + Prettier + markdownlint.
 - **Tests** — Vitest with v8 coverage.
 - **Conventional commits** — Husky + lint-staged + commitlint + Commitizen.
+- **Dead-code & dependency checks** — `knip` flags unused files, exports, and dependencies.
 - **Validated publishing** — `publint` + `@arethetypeswrong/cli` in `prepublishOnly`.
 
 ## Requirements
@@ -40,6 +41,7 @@ greet('World'); // => "Hello, World!"
 | `pnpm dev`                          | Run in watch mode with `tsx`.            |
 | `pnpm build`                        | Compile to `dist/` (without tests).      |
 | `pnpm typecheck`                    | Type-check without emitting.             |
+| `pnpm knip`                         | Find unused files, exports & deps.       |
 | `pnpm lint` / `pnpm lint:fix`       | Linting with ESLint.                     |
 | `pnpm lint:md` / `pnpm lint:md:fix` | Linting Markdown with markdownlint.      |
 | `pnpm format` / `pnpm format:check` | Formatting with Prettier.                |

@@ -113,14 +113,14 @@ The base config turns on a lot of strictness on purpose. The important flags:
 | `isolatedModules`                       | Each file must be compilable alone.                                                       | Compatibility with single-file transpilers (esbuild/swc/Vitest).      |
 | `noUnusedLocals` / `noUnusedParameters` | Errors on dead variables.                                                                 | Keeps code clean; catches mistakes.                                   |
 | `declaration` + `declarationMap`        | Emits `.d.ts` and `.d.ts.map`.                                                            | Consumers get types **and** "Go to Definition" into your source.      |
-| `sourceMap`                             | Emits `.js.map`.                                                                          | Lets consumers debug into the original `.ts`.                         |
+| `sourceMap` + `inlineSources`           | Emits `.js.map` with the original `.ts` **embedded**.                                     | Consumers can debug into your source without us shipping `src/`.      |
 | `moduleDetection: force`                | Every file is treated as a module.                                                        | No accidental global scripts.                                         |
-| `module: nodenext` / `target: es2023`   | Modern Node module resolution; compile down to ES2023.                                    | Matches the Node `>=22` we support; see notes below.                  |
+| `module: nodenext` / `target: es2024`   | Modern Node module resolution; compile down to ES2024.                                    | Matches the Node `>=22` we support; see notes below.                  |
 
-A note on **`target: es2023`** (not `esnext`): `esnext` is a _moving target_ — its
+A note on **`target: es2024`** (not `esnext`): `esnext` is a _moving target_ — its
 meaning changes as TypeScript updates, so your emitted JavaScript could change between TS
-versions. Pinning to a concrete year (`es2023`) makes the build **reproducible** and
-predictable for consumers. We picked `es2023` because it's safely supported by Node 22+.
+versions. Pinning to a concrete year (`es2024`) makes the build **reproducible** and
+predictable for consumers. We picked `es2024` because it's safely supported by Node 22+.
 
 ### Full `tsconfig.json` reference
 
@@ -134,13 +134,14 @@ Every option in [`tsconfig.json`](../tsconfig.json), in plain language:
 #### Modules & language version
 
 - `module: "nodenext"` — use Node's modern module system (ESM with `import`).
-- `target: "es2023"` — which JavaScript version your code is translated to.
-- `lib: ["es2023"]` — which language APIs you're allowed to use.
+- `target: "es2024"` — which JavaScript version your code is translated to.
+- `lib: ["es2024"]` — which language APIs you're allowed to use.
 - `types: ["node"]` — load Node's types (`process`, `fs`, …).
 
 #### File generation
 
 - `sourceMap: true` — emit `.js.map` so consumers can debug into the original `.ts`.
+- `inlineSources: true` — embed the original `.ts` _inside_ the `.js.map`, so debugging works without publishing `src/`.
 - `declaration: true` — emit `.d.ts` (the types for whoever installs the library).
 - `declarationMap: true` — emit `.d.ts.map` so "Go to Definition" jumps into your `.ts`.
 - `resolveJsonModule: true` — allow `import data from './x.json'`.
@@ -404,10 +405,26 @@ style, markdownlint for documentation quality.**
 2. Write `const x: any = 1;` and run `pnpm lint` — `strictTypeChecked` will warn about the
    unsafe `any`.
 
+### Finding dead code & unused deps (knip)
+
+[Knip](https://knip.dev/) scans the project and reports **unused files, exports, and
+dependencies** — the clutter that accumulates as a codebase grows. It runs with `pnpm knip`
+and is wired into CI (Section 9), so dead code can't quietly pile up.
+
+- **Why** — an unused export is API you're accidentally committing to; an unused dependency
+  is install weight and extra attack surface. Knip catches both before review does.
+- **Config** ([`knip.json`](../knip.json)) is intentionally minimal: knip infers the entry
+  points from `package.json` (`exports`/`bin`) and auto-detects tool configs, so there's
+  nothing to maintain by hand for a small library.
+
+**Try it 🧪** — add `export const unused = 1;` to [`src/index.ts`](../src/index.ts) without
+importing it anywhere and run `pnpm knip`; watch it flag the unused export, then remove it.
+
 ### Learn more 📚
 
 - [typescript-eslint: shared configs](https://typescript-eslint.io/users/configs)
 - [Why Prettier + ESLint](https://prettier.io/docs/en/integrating-with-linters.html)
+- [Knip documentation](https://knip.dev/)
 
 ---
 
@@ -568,8 +585,8 @@ and pull request. The workflow is [`.github/workflows/ci.yml`](../.github/workfl
 ### Why we did it this way
 
 The CI job runs the **same checks you run locally**, in order: lint → markdown lint →
-format check → typecheck → test → build → package validation. If it's green, the change is
-safe to merge.
+format check → typecheck → knip → test → build → package validation. If it's green, the
+change is safe to merge.
 
 Key decisions:
 
@@ -593,7 +610,8 @@ flowchart LR
     L --> MD[Markdown lint]
     MD --> F[Format check]
     F --> T[Typecheck]
-    T --> U[Test]
+    T --> K[Knip]
+    K --> U[Test]
     U --> B[Build]
     B --> P[publint + attw]
     end
@@ -610,10 +628,11 @@ from `ci.yml` because it has a different cadence (the weekly `cron` catches advi
 published _after_ code stops changing) and needs the `security-events: write` permission to
 upload results. The `security-extended` query suite adds checks beyond the default set.
 
-> A reasonable next hardening step (not done here to keep the workflows readable) is
-> **pinning each action to a full commit SHA** instead of a moving tag like `@v4`, as
-> recommended by [OpenSSF Scorecard](https://github.com/ossf/scorecard). Dependabot's
-> `github-actions` updates already keep the tags current.
+As a supply-chain hardening step recommended by
+[OpenSSF Scorecard](https://github.com/ossf/scorecard), **every action is pinned to a full
+commit SHA** (with a `# v4`-style comment for readability) instead of a moving tag like
+`@v4` — a moved tag could otherwise run code you never reviewed. Dependabot's
+`github-actions` updates keep both the SHA and the comment current.
 
 ### Alternatives (and why not)
 
@@ -682,13 +701,18 @@ Changesets lives in three places:
 
    ```jsonc
    {
-     "changelog": "@changesets/cli/changelog", // how the CHANGELOG is generated
+     // generate a CHANGELOG with links to the PRs and authors of each change
+     "changelog": ["@changesets/changelog-github", { "repo": "owner/repo" }],
      "commit": false, // don't auto-commit; you control it
      "access": "public", // publish publicly on npm
      "baseBranch": "main", // branch changes are compared against
    }
    ```
 
+   We use **`@changesets/changelog-github`** (not the default `@changesets/cli/changelog`)
+   so each changelog entry links back to its PR and author — the standard for public repos.
+   It needs a `GITHUB_TOKEN` at version time; the release workflow already provides one, so
+   it "just works" in CI (running `changeset version` locally would need the token exported).
    The remaining fields (`fixed`, `linked`, `ignore`, `updateInternalDependencies`) only
    matter in a monorepo with several packages.
 
@@ -704,7 +728,7 @@ Changesets lives in three places:
    runs on push to `main` and uses `changesets/action`, wiring the two phases together:
 
    ```yaml
-   - uses: changesets/action@v1
+   - uses: changesets/action@<commit-sha> # v1 (pinned by SHA, see CI section)
      with:
        version: pnpm run version-packages # phase 1: open/update the "Version Packages" PR
        publish: pnpm run release # phase 2: publish once that PR is merged
@@ -726,6 +750,30 @@ commit message — you author it separately (usually via `pnpm changeset`):
 
 Add support for X
 ```
+
+### Which bump do I pick?
+
+When you run `pnpm changeset` it asks how the version should move. The rule follows
+[Semantic Versioning](https://semver.org/) and lines up with your Conventional Commit type:
+
+| You did…                                            | Bump      | Example         |
+| --------------------------------------------------- | --------- | --------------- |
+| Fixed a bug; correct callers see no behavior change | **patch** | `1.2.3 → 1.2.4` |
+| Added functionality without breaking existing usage | **minor** | `1.2.3 → 1.3.0` |
+| Changed/removed public API; existing code may break | **major** | `1.2.3 → 2.0.0` |
+
+Rules of thumb:
+
+- **Unsure between patch and minor?** Ask "could a user's code _do something new_ after
+  this?" Yes → minor; it merely behaves more correctly → patch.
+- **Several changesets per PR are fine** — add one per logical change; Changesets combines
+  them and applies the highest bump.
+- **If you forget one**, nothing breaks, but the change won't show up in the next release or
+  the changelog. CI doesn't fail on a missing changeset; the
+  [PR checklist](../.github/PULL_REQUEST_TEMPLATE.md) reminds you. Skip it only for changes
+  that don't touch the published package (CI, docs, internal tooling).
+- **Pre-1.0.0 caveat**: while the version is `0.x`, a breaking change conventionally bumps
+  the **minor** (`0.2.0 → 0.3.0`), because `0.x` already signals an unstable public API.
 
 ### Alternatives (and why not)
 
@@ -770,22 +818,24 @@ the `prepublishOnly` script.
   in the published tarball:
 
   ```jsonc
-  "files": ["dist", "src", "!src/**/*.test.ts"]
+  "files": ["dist"]
   ```
 
-  We ship `dist` (the compiled code + types + maps) **and** `src` (the original source) —
-  but **not** the test files. Why ship `src`? Because the declaration maps (`.d.ts.map`)
-  point back to `src/index.ts`; including the source means a consumer's "Go to Definition"
-  jumps straight into your real TypeScript, and they can debug into the library. Shipping
-  maps without the source would leave them dangling — the worst of both worlds.
+  We ship only `dist` (the compiled code + types + maps), keeping the package small. The
+  maps still let consumers "Go to Definition" and debug into the original TypeScript —
+  without shipping a separate `src/` folder — because `inlineSources: true` (Section 2)
+  **embeds** the `.ts` source directly inside the `.js.map`/`.d.ts.map`. So the maps are
+  never dangling, and the package stays lean.
 
 ### Alternatives (and why not)
 
 - **Not validating** — you'll eventually publish a broken package and find out from a bug
   report. The two checks cost seconds and prevent embarrassing releases.
-- **Not shipping `src`** — smaller package, but then declaration/source maps don't resolve
-  for consumers. Shipping `src` (minus tests) is the better DX for a library and keeps the
-  maps honest.
+- **Shipping `src` alongside `dist`** — an alternative way to keep maps resolvable: publish
+  the raw source too (minus tests) so the maps point at real files. It works, but roughly
+  doubles the tarball. Embedding sources with `inlineSources` gives the same debugging DX in
+  a smaller package, so we prefer it. (A third option — dropping the maps entirely — is even
+  smaller but removes debug-into-source for consumers.)
 
 ### Try it 🧪
 
@@ -951,9 +1001,14 @@ node_modules
 dist
 coverage
 pnpm-lock.yaml
+CHANGELOG.md
 .claude
 .husky
 ```
+
+`CHANGELOG.md` is excluded (and likewise skipped by `lint:md`) because **Changesets owns
+its format** — letting Prettier or markdownlint rewrite it would create pointless churn and
+fight the release tooling.
 
 ### Keep `.editorconfig` and `.prettierrc` in sync
 
@@ -1178,12 +1233,89 @@ and CI run the same compiler.
 
 ---
 
+## Worked example: a change from start to finish
+
+The whole workflow on one page — what to type and what you should see. Say you're adding a
+`farewell` function.
+
+**1. Branch off `main`.**
+
+```bash
+git switch -c feat/farewell
+```
+
+**2. Write the code and a colocated test.** In [`src/index.ts`](../src/index.ts):
+
+```ts
+export const farewell = (name: string): string => `Goodbye, ${name}!`;
+```
+
+In a test file (e.g. `src/index.test.ts`):
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { farewell } from './index.js'; // .js, not .ts — see Section 3
+
+describe('farewell', () => {
+  it('says goodbye', () => {
+    expect(farewell('World')).toBe('Goodbye, World!');
+  });
+});
+```
+
+**3. Run the inner loop** while you work — both re-run on save:
+
+```bash
+pnpm dev    # one terminal: tsx watch
+pnpm test   # another: Vitest watch mode
+```
+
+**4. Pre-flight the exact gates CI will run:**
+
+```bash
+pnpm lint && pnpm lint:md && pnpm format:check && pnpm typecheck && pnpm knip && pnpm test:run && pnpm build && pnpm check:publish
+```
+
+All green means CI will be green too. (Format-on-save usually keeps `format:check` happy;
+if not, run `pnpm format`.)
+
+**5. Record the change** so it lands in the version bump and changelog:
+
+```bash
+pnpm changeset
+```
+
+Pick **minor** (a new feature — see ["Which bump do I pick?"](#which-bump-do-i-pick) in
+Section 10), write a one-line summary, and commit the generated `.changeset/*.md` file
+together with your code.
+
+**6. Commit with a Conventional Commit message** (the hooks run automatically):
+
+```bash
+git add -A
+git commit -m "feat: add farewell function"   # or: pnpm commit (guided prompt)
+```
+
+The **pre-commit** hook lints/formats your staged files; **commit-msg** validates the
+message — a non-conventional one is rejected right here.
+
+**7. Push and open a PR:**
+
+```bash
+git push -u origin feat/farewell
+```
+
+CI runs the full suite on Node 22 + 24. Once it's green and the PR is merged, the
+**release workflow** opens a "Version Packages" PR (Section 10); merging _that_ publishes
+the new version to npm. You never edit the version number by hand.
+
+---
+
 ## Where to go next
 
-You now understand _what_ is in this project and _why_. The best next step is to **make a
-change end to end**: branch → edit code + test → `pnpm changeset` → commit with a
-conventional message → open a PR → watch CI run. That single loop exercises almost every
-tool in this guide.
+You now understand _what_ is in this project, _why_ it's there, and _how_ the full workflow
+runs (the worked example above). The best next step is to do that loop for real on a tiny
+change of your own — it exercises almost every tool in this guide.
 
 Welcome aboard — and don't hesitate to revisit any section as you meet these tools in
 real work. 🚀

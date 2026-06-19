@@ -11,5 +11,10 @@
     "**/dist": true,
     "**/coverage": true,
     "**/pnpm-lock.yaml": true
-  }
+  },
+  "files.associations": {
+    "config": "plaintext",
+    ".gitconfig": "properties"
+  },
+  "markdownlint.ignore": ["**/.ssh/**", "**/.gitconfig"]
 }

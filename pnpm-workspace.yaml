@@ -1,4 +1,6 @@
-# pnpm 10+ blocks dependency build scripts by default.
-# List the ones that don't need compiling to silence the warning.
-ignoredBuiltDependencies:
-  - esbuild
+# pnpm blocks dependency build scripts by default and fails the install
+# (ERR_PNPM_IGNORED_BUILDS) until each one is explicitly allowed or denied.
+# esbuild (pulled in by tsx/vitest/knip) ships a native binary via its install
+# script, so we allow it. Set a dependency to false to keep its build blocked.
+allowBuilds:
+  esbuild: true
