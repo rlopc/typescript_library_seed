@@ -1,6 +1,8 @@
 import eslint from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
+import sonarjs from 'eslint-plugin-sonarjs';
 import prettier from 'eslint-config-prettier';
 
 export default defineConfig(
@@ -9,13 +11,12 @@ export default defineConfig(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
+  eslintPluginUnicorn.configs.recommended,
+  sonarjs.configs.recommended,
   {
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['*.ts'],
-          defaultProject: './tsconfig.eslint.json',
-        },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },

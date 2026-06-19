@@ -9,7 +9,7 @@ A starter template gathering current best practices for a TypeScript package: bu
 - **Pure ESM** (`"type": "module"`) — aligned with the direction of the ecosystem.
 - **Strict `tsconfig`** — `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, and more.
 - **Separate build** — `tsconfig.build.json` excludes tests from the published package.
-- **Code quality** — ESLint (flat config, type-checked) + Prettier + markdownlint.
+- **Code quality** — ESLint (flat config, type-checked) with `unicorn` + `sonarjs` plugins (modern best practices & code-smell detection), Prettier, and markdownlint.
 - **Tests** — Vitest with v8 coverage.
 - **Conventional commits** — Husky + lint-staged + commitlint + Commitizen.
 - **Dead-code & dependency checks** — `knip` flags unused files, exports, and dependencies.
@@ -57,9 +57,8 @@ greet('World'); // => "Hello, World!"
 ├── src/                 # Source code and tests
 │   ├── index.ts
 │   └── index.test.ts
-├── tsconfig.json        # Base config (IDE, type-checked lint, typecheck)
-├── tsconfig.build.json  # Build config (excludes tests)
-├── tsconfig.eslint.json # Config for type-checked linting
+├── tsconfig.json        # Type-check config (IDE, lint, typecheck — no emit)
+├── tsconfig.build.json  # Build config (emits to dist/, excludes tests)
 ├── eslint.config.ts     # ESLint flat config
 └── vitest.config.ts     # Vitest config
 ```
