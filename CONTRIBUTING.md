@@ -50,7 +50,8 @@ pnpm install
 
 - **Commits**: Conventional Commits (validated by commitlint).
 - **Formatting**: Prettier (automatic on pre-commit via lint-staged).
-- **Linting**: ESLint with type-checked rules.
+- **Linting**: ESLint with type-checked rules, plus the `unicorn` and `sonarjs` plugins
+  (modern best practices and code-smell detection). Run `pnpm lint:fix` to auto-apply safe fixes.
 
 ## Using this repository as a template
 
