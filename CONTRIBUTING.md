@@ -52,6 +52,30 @@ pnpm install
 - **Formatting**: Prettier (automatic on pre-commit via lint-staged).
 - **Linting**: ESLint with type-checked rules.
 
+## Using this repository as a template
+
+This repository is a **template**: it ships the full publishing pipeline ready to use, but
+is itself marked `"private": true` in [`package.json`](./package.json) so it can **never be
+published by accident**. Derived projects inherit a working release setup; to turn
+publishing on, do this once after creating your project from the template:
+
+1. **Remove `"private": true`** from `package.json` (this is the single switch that enables
+   publishing).
+2. **Rename the package** — set a unique `name` (and a `@scope` if you publish under one),
+   and update `repository`, `homepage`, and `bugs` URLs to your repo.
+3. **Choose the registry:**
+   - **npmjs.com (public)** — nothing to change; keep `publishConfig.access: "public"`. Add
+     an `NPM_TOKEN` secret (an npm automation token) to the repo's Actions secrets.
+   - **GitHub Packages (private)** — set `"publishConfig": { "registry": "https://npm.pkg.github.com" }`,
+     scope the name as `@<owner>/<pkg>`, and rely on the workflow's `GITHUB_TOKEN` (no
+     `NPM_TOKEN` needed).
+4. **Verify** packaging before the first release: `pnpm check:publish` and
+   `pnpm pack --dry-run`.
+
+Until step 1 is done, the release workflow runs but `changeset publish` skips the private
+package, so the template stays unpublished while everything else (CI, changesets,
+versioning) keeps working.
+
 ## Releases
 
 Versions are managed with [Changesets](https://github.com/changesets/changesets) and

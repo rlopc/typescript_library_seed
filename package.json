@@ -1,6 +1,7 @@
 {
   "name": "typescript-library-seed",
   "version": "0.1.0",
+  "private": true,
   "description": "TypeScript seed project with best practices",
   "type": "module",
   "main": "./dist/index.js",
