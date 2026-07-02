@@ -4,6 +4,9 @@ import { execa } from 'execa';
 const run = (cliArguments: string[]) =>
   execa(process.execPath, ['--import', 'tsx', 'src/cli.ts', ...cliArguments], {
     reject: false,
+    // Deterministic output: picocolors would otherwise emit ANSI colors on CI
+    // (it treats a `CI` env var as color-capable even without a TTY).
+    env: { NO_COLOR: '1' },
   });
 
 describe('cli', () => {
