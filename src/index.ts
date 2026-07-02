@@ -1,1 +1,1 @@
-export const greet = (name: string): string => `Hello, ${name}!`;
+export { greet } from './lib/greet.js';
