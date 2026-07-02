@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pnpm format *)",
       "Bash(pnpm format:check)",
-      "Bash(pnpm lint:md)"
+      "Bash(pnpm lint:md)",
+      "Bash(git switch *)"
     ]
   }
 }

@@ -19,12 +19,15 @@ pnpm install
 2. Code with the inner dev loop running:
 
    ```bash
-   pnpm dev   # tsx watch: re-runs src/index.ts on save
-   pnpm test  # Vitest in watch mode
+   pnpm dev greet World   # run the CLI from source (tsx); pass any args
+   pnpm test              # Vitest in watch mode
    ```
 
-   Source and its colocated test live side by side in `src/` (`*.test.ts`). The editor
-   applies ESLint + Prettier on save (see [`.vscode/settings.json`](./.vscode/settings.json)).
+   The code is split in layers: pure, testable logic in `src/lib/`, the CLI layer in
+   `src/cli.ts` + `src/commands/`, and the public API in `src/index.ts`. Tests live
+   colocated in `src/` (`*.test.ts`) — unit tests for the logic and an end-to-end test that
+   runs the CLI. The editor applies ESLint + Prettier on save (see
+   [`.vscode/settings.json`](./.vscode/settings.json)).
 
 3. Verify everything passes (the same checks CI runs, in the same order):
 

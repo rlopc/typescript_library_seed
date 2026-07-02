@@ -56,5 +56,8 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Smoke test (CLI boots)
+        run: pnpm smoke
+
       - name: Validate package (publint + attw)
         run: pnpm check:publish
