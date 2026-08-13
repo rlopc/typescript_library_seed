@@ -68,8 +68,19 @@ publishing on, do this once after creating your project from the template:
 2. **Rename the package** — set a unique `name` (and a `@scope` if you publish under one),
    and update `repository`, `homepage`, and `bugs` URLs to your repo.
 3. **Choose the registry:**
-   - **npmjs.com (public)** — nothing to change; keep `publishConfig.access: "public"`. Add
-     an `NPM_TOKEN` secret (an npm automation token) to the repo's Actions secrets.
+   - **npmjs.com (public)** — nothing to change; keep `publishConfig.access: "public"`.
+     Then authorize the workflow to publish, preferring **trusted publishing**:
+     - _Trusted publishing (recommended)_ — on npmjs.com, under the package's
+       **Settings → Trusted publisher**, register this repository and the
+       `release.yml` workflow. GitHub then mints a short-lived OIDC credential for each
+       run (the `id-token: write` permission the workflow already declares for
+       provenance), so **no token is stored anywhere**. Requires npm `>=11.5.1` in CI;
+       add a `- run: npm i -g npm@latest` step before the release step if the runner
+       ships an older npm. Delete the `NODE_AUTH_TOKEN` env entry from the workflow.
+     - _Automation token (fallback)_ — for registries without trusted publishing, or a
+       first publish that must happen manually: create an npm **automation** token and
+       add it as the `NPM_TOKEN` Actions secret, which the workflow already reads. It is
+       a long-lived credential, so rotate it periodically and keep its scope minimal.
    - **GitHub Packages (private)** — set `"publishConfig": { "registry": "https://npm.pkg.github.com" }`,
      scope the name as `@<owner>/<pkg>`, and rely on the workflow's `GITHUB_TOKEN` (no
      `NPM_TOKEN` needed).
