@@ -17,7 +17,9 @@ const runGreet = async (arguments_: string[]) => {
   return write;
 };
 
-/** `isTTY` is a plain property on the stream, so it is set, not spied. */
+/**
+ * `isTTY` is a plain property on the stream, so it is set, not spied.
+ */
 const withTTY = async (isTTY: boolean, run: () => Promise<void>) => {
   const wasTTY = process.stdout.isTTY;
   process.stdout.isTTY = isTTY;
