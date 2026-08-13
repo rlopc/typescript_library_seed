@@ -91,7 +91,8 @@ greet('World'); // => "Hello, World!"
 │   ├── cli.ts              # CLI entry: shebang + commander + error handling
 │   ├── index.ts            # public API entry (re-exports)
 │   ├── commands/
-│   │   └── greet.ts        # example subcommand (lib + prompt + --json)
+│   │   ├── greet.ts        # example subcommand (lib + prompt + --json)
+│   │   └── greet.test.ts   # in-process command test (measurable coverage)
 │   ├── lib/
 │   │   ├── greet.ts        # pure, testable logic
 │   │   └── greet.test.ts   # unit test

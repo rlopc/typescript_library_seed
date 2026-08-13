@@ -16,9 +16,12 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
+    "erasableSyntaxOnly": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+    // Required by the `tsup` .d.ts build: it injects a `baseUrl`, which TS 6.0
+    // reports as deprecated (TS5101). Not needed by `tsc` on this config alone.
     "ignoreDeprecations": "6.0",
     "noEmit": true
   },
