@@ -831,6 +831,13 @@ flowchart TD
 - **npm provenance** (`publishConfig.provenance: true` in `package.json`, plus
   `id-token: write` in the workflow) — publishes a cryptographic record linking the package
   back to the exact CI run and commit, so consumers can verify it wasn't tampered with.
+- **Trusted publishing over stored tokens** — the same `id-token: write` permission also
+  lets npm authenticate the workflow directly through OIDC: you register the repository and
+  workflow as a _trusted publisher_ on npmjs.com, and each run gets a short-lived credential
+  instead of a long-lived `NPM_TOKEN` secret sitting in the repo. A stored token never
+  expires and can publish anything you own, so it is the more valuable thing to steal. The
+  workflow here still reads `NPM_TOKEN` as the fallback for registries without OIDC support;
+  see [CONTRIBUTING.md](../CONTRIBUTING.md) for switching a derived project over.
 
 ### How it's wired
 
