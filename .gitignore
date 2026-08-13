@@ -18,6 +18,9 @@ coverage/
 .env
 .env.*
 
+# Local, machine-specific tool settings
+.claude/settings.local.json
+
 # Logs
 *.log
 

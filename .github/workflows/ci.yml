@@ -10,6 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Minimal permissions: this workflow only needs to read the code.
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: Node ${{ matrix.node-version }}
@@ -50,8 +54,8 @@ jobs:
       - name: Knip (unused files, deps & exports)
         run: pnpm knip
 
-      - name: Test
-        run: pnpm test:run
+      - name: Test (with coverage thresholds)
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build

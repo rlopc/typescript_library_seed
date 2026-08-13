@@ -580,10 +580,13 @@ remove it.
   verify argument parsing, `--json`, and exit codes actually work when wired together.
 - **v8 coverage with 80% thresholds** — the config measures how much code your tests
   exercise and **fails** below 80%. One subtlety worth knowing: coverage only counts code
-  loaded **in the test process**, so files exercised only via the e2e subprocess (`cli.ts`,
-  `commands/`) don't contribute coverage numbers — which is exactly why the meaningful
-  **logic** lives in `lib/` and is unit-tested directly. Thresholds turn coverage from a
-  vanity number into an enforced quality gate on that logic.
+  loaded **in the test process**, so a file exercised _only_ through the e2e subprocess
+  contributes **zero** coverage no matter how well the e2e test covers it. That is why
+  every command is _also_ tested in-process ([`commands/greet.test.ts`](../src/commands/greet.test.ts),
+  which mounts the command on a `Command` and mocks the prompt), and why `cli.ts` — pure
+  argv wiring with no logic of its own — is excluded from coverage in
+  [`vitest.config.ts`](../vitest.config.ts). Thresholds turn coverage from a vanity number
+  into an enforced quality gate.
 
 ### Alternatives (and why not)
 
@@ -598,9 +601,9 @@ remove it.
 
 1. Run `pnpm test` (watch mode). Edit `greet.test.ts` to expect the wrong value and watch it
    go red, then fix it.
-2. Run `pnpm test:coverage`. Add an unused exported function to
-   [`src/lib/greet.ts`](../src/lib/greet.ts) without a test and watch coverage drop below the
-   threshold and fail the command.
+2. Run `pnpm test:coverage` (it starts at 100%). Add an unused exported function to
+   [`src/lib/greet.ts`](../src/lib/greet.ts) without a test: the untested function drops the
+   `functions` metric below the 80% threshold and fails the command.
 
 ### Learn more 📚
 
@@ -1141,8 +1144,9 @@ extensions. `verbatimModuleSyntax` enforces it.
 
 **Q: Why does the CLI test spawn a subprocess instead of importing the CLI?**
 To test it the way a user runs it — real `argv`, real exit codes. The trade-off is that this
-code doesn't count toward coverage (coverage only sees the test process), which is fine
-because the meaningful logic lives in `src/lib/` and is unit-tested directly.
+code doesn't count toward coverage (coverage only sees the test process), so each command is
+_also_ tested in-process and `cli.ts` is excluded from coverage. Both tests earn their keep:
+the in-process one measures, the e2e one proves the wiring works.
 
 **Q: My commit was rejected — "subject may not be empty / type may not be empty".**
 Your message isn't a Conventional Commit. Use a prefix: `feat: …`, `fix: …`, `docs: …`,
