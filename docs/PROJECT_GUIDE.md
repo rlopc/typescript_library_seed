@@ -366,6 +366,25 @@ export default defineConfig({
 - **`clean: true` replaces a `clean` script** — tsup wipes `dist/` itself before each build,
   so there's no need for a separate `rimraf` step.
 
+A trade-off worth naming in a **dual** package: those three dependencies exist for the CLI,
+but `dependencies` is a property of the _package_, not of an entry point. Someone who only
+`import`s the library API still installs `commander`, `@clack/prompts`, and `picocolors` —
+they are never loaded (`index.ts` doesn't reach them), just downloaded. Here that is roughly
+**half a megabyte** on disk (commander ~230 KB, `@clack/prompts` ~230 KB with its own
+dependencies, picocolors ~30 KB) — not worth optimizing for a seed, but the cost grows with
+the CLI's appetite for dependencies. When it starts to matter, the usual answers are:
+
+- **Split the package** — publish `your-lib` and `your-lib-cli` separately, with the CLI
+  depending on the library. The cleanest boundary, and twice the release work.
+- **Move CLI deps to `peerDependencies` + `peerDependenciesMeta.optional`** — API consumers
+  skip them; CLI users must install them. Correct but hostile to `npx` usage.
+- **Bundle the CLI's dependencies** — set tsup's `noExternal` for them so `dist/cli.js`
+  carries its own copies and `dependencies` empties out. Ships duplicated code and defeats
+  the consumer's deduplication, so weigh it against the download it saves.
+
+The seed keeps the simple version on purpose: one package, real `dependencies`, no
+indirection until a project actually needs it.
+
 A note on **source maps**: `sourcemap: true` produces `.js.map` files with the original
 TypeScript **embedded** inside them, so consumers can debug into your source without you
 shipping the `src/` folder. (Unlike plain `tsc`, tsup does **not** emit `.d.ts.map` files, so
